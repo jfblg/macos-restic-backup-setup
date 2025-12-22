@@ -43,9 +43,17 @@ perform_backup() {
     
     log "--- Starting backup for: $REPO_NAME ($REPO_URL) ---"
     
-    # shellcheck disable=SC2068
-    restic backup "${BACKUP_PATHS[@]}" >> "$LOG_FILE" 2>&1
-    local EXIT_CODE=$?
+    if [ -t 1 ]; then
+        # Interactive mode: Show progress to user and log to file
+        # shellcheck disable=SC2068
+        restic backup "${BACKUP_PATHS[@]}" --verbose 2>&1 | tee -a "$LOG_FILE"
+        local EXIT_CODE=${PIPESTATUS[0]}
+    else
+        # Background mode: Log only to file
+        # shellcheck disable=SC2068
+        restic backup "${BACKUP_PATHS[@]}" >> "$LOG_FILE" 2>&1
+        local EXIT_CODE=$?
+    fi
 
     if [ $EXIT_CODE -eq 0 ]; then
         log "Backup to $REPO_NAME finished successfully."
@@ -56,7 +64,11 @@ perform_backup() {
         KEEP_MONTHLY=${RETENTION_MONTHLY:-12}
 
         log "Pruning old snapshots for $REPO_NAME..."
-        restic forget --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --prune >> "$LOG_FILE" 2>&1
+        if [ -t 1 ]; then
+             restic forget --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --prune 2>&1 | tee -a "$LOG_FILE"
+        else
+             restic forget --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --prune >> "$LOG_FILE" 2>&1
+        fi
     else
         log "Backup to $REPO_NAME failed with exit code $EXIT_CODE."
         # We don't exit here to allow other backups to proceed
