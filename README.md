@@ -31,35 +31,33 @@ This project provides a comprehensive set of scripts to configure, schedule, and
     ./scripts/install_restic.sh
     ```
 
-3.  **Prepare Configuration:**
-    Create the configuration directory and copy the template:
+3.  **Initialize Configuration:**
+    Run the initialization script to create your config directory and file:
     ```bash
-    mkdir -p ~/.restic-backup
-    cp config/restic.env.template ~/.restic-backup/restic.env
+    ./scripts/init_repo.sh
     ```
+    This script will:
+    - Create `~/.restic-backup/restic.env` from the template if it doesn't exist.
+    - Set **secure permissions (0600)** so only your user can read the secrets.
+    - Inform you to edit the file with your specific settings.
 
 4.  **Configure Backend (Choose One):**
 
     *   **Option A: AWS S3**
-        Run the helper script to create the bucket and IAM user with restricted permissions:
+        Run the helper script to create the bucket and IAM user:
         ```bash
         ./scripts/setup_aws.sh
         ```
-        This script will also apply an S3 Lifecycle Rule to automatically transition all data to the **Intelligent-Tiering** storage class, optimizing storage costs.
-        
         Follow the prompts. Copy the outputted credentials into `~/.restic-backup/restic.env`.
 
     *   **Option B: Local/Mounted Path**
-        Edit `~/.restic-backup/restic.env` and set `RESTIC_REPOSITORY_LOCAL` to your local path (e.g., `/Volumes/BackupDrive/restic-repo`).
-
-    *   **3-2-1 Backup Strategy (Recommended)**
-        You can configure **both** `RESTIC_REPOSITORY_LOCAL` and `RESTIC_REPOSITORY_REMOTE` in `restic.env`. The backup script will automatically back up to both locations sequentially, ensuring you have a local copy for fast restores and an offsite copy for disaster recovery.
+        Edit `~/.restic-backup/restic.env` and set `RESTIC_REPOSITORY_LOCAL` (e.g., `/Volumes/BackupDrive/restic-repo`).
 
 5.  **Finalize Configuration:**
-    Edit `~/.restic-backup/restic.env` to set your password and the paths you want to backup (`BACKUP_PATHS`).
+    Edit `~/.restic-backup/restic.env` and set your password and `BACKUP_PATHS`.
 
-6.  **Initialize Repositories:**
-    Run this once to initialize the configured repositories:
+6.  **Initialize Repository Metadata:**
+    Run the initialization script **again** after you've finished editing the config file to actually create the restic repositories:
     ```bash
     ./scripts/init_repo.sh
     ```

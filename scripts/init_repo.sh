@@ -2,16 +2,30 @@
 
 # Configuration
 CONFIG_FILE="${HOME}/.restic-backup/restic.env"
+TEMPLATE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/restic.env.template"
+
+# Ensure config directory exists
+mkdir -p "$(dirname "$CONFIG_FILE")"
+
+# Check if configuration exists, if not, copy template
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Configuration file not found. Copying template to $CONFIG_FILE..."
+    cp "$TEMPLATE_FILE" "$CONFIG_FILE"
+    echo "Please edit $CONFIG_FILE with your repository details and passwords before continuing."
+    
+    # Set secure permissions immediately
+    chmod 0600 "$CONFIG_FILE"
+    echo "Secure permissions (0600) set on $CONFIG_FILE."
+    exit 0
+fi
+
+# Enforce secure permissions even if file already exists
+chmod 0600 "$CONFIG_FILE"
+echo "Enforcing secure permissions (0600) on $CONFIG_FILE..."
 
 # Load configuration
-if [ -f "$CONFIG_FILE" ]; then
-    # shellcheck disable=SC1090
-    source "$CONFIG_FILE"
-else
-    echo "Error: Configuration file not found at $CONFIG_FILE"
-    echo "Please copy config/restic.env.template to $CONFIG_FILE and edit it."
-    exit 1
-fi
+# shellcheck disable=SC1090
+source "$CONFIG_FILE"
 
 if ! command -v restic &> /dev/null; then
     echo "Error: restic is not installed."
