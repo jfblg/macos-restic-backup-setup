@@ -50,13 +50,16 @@ This project provides a comprehensive set of scripts to configure, schedule, and
         Follow the prompts. Copy the outputted credentials into `~/.restic-backup/restic.env`.
 
     *   **Option B: Local/Mounted Path**
-        Edit `~/.restic-backup/restic.env` and set `RESTIC_REPOSITORY` to your local path (e.g., `/Volumes/BackupDrive/restic-repo`).
+        Edit `~/.restic-backup/restic.env` and set `RESTIC_REPOSITORY_LOCAL` to your local path (e.g., `/Volumes/BackupDrive/restic-repo`).
+
+    *   **3-2-1 Backup Strategy (Recommended)**
+        You can configure **both** `RESTIC_REPOSITORY_LOCAL` and `RESTIC_REPOSITORY_REMOTE` in `restic.env`. The backup script will automatically back up to both locations sequentially, ensuring you have a local copy for fast restores and an offsite copy for disaster recovery.
 
 5.  **Finalize Configuration:**
     Edit `~/.restic-backup/restic.env` to set your password and the paths you want to backup (`BACKUP_PATHS`).
 
-6.  **Initialize Repository:**
-    Run this once to initialize the restic repository:
+6.  **Initialize Repositories:**
+    Run this once to initialize the configured repositories:
     ```bash
     ./scripts/init_repo.sh
     ```
@@ -68,12 +71,23 @@ This project provides a comprehensive set of scripts to configure, schedule, and
     ```
     *Note: If your Mac is asleep at the scheduled time, the backup will run when it wakes up.*
 
+8.  **Install CLI Tools (Optional):**
+    To run commands like `restic-backup` and `restic-restore` from anywhere in your terminal (without needing to cd into this directory), run:
+    ```bash
+    ./scripts/install_cli.sh
+    ```
+    This creates symlinks in `/usr/local/bin`.
+
 ## Usage
 
 ### Check Logs
-Logs are written to `~/.restic-backup/backup.log`.
+Logs are written to `~/.restic-backup/backup.log`. You can view them using the CLI tool:
 ```bash
-tail -f ~/.restic-backup/backup.log
+# Show last 50 lines
+restic-log
+
+# Follow the log in real-time
+restic-log -f
 ```
 
 ### Manual Backup
@@ -83,13 +97,14 @@ You can trigger a backup manually at any time:
 ```
 
 ### Restore Files
-Use the interactive restore script:
+Use the interactive restore script, which will ask you which repository to use if multiple are configured:
 ```bash
 ./scripts/restore.sh
 ```
-Or use standard restic commands (remember to source the config first):
+Or use standard restic commands (remember to source the config and export the correct repository):
 ```bash
 source ~/.restic-backup/restic.env
+export RESTIC_REPOSITORY=$RESTIC_REPOSITORY_REMOTE # or _LOCAL
 restic restore latest --target /tmp/restore
 ```
 

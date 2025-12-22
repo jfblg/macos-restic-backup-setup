@@ -28,33 +28,67 @@ log() {
 
 log "Starting backup..."
 
-# Perform Backup
-# We assume RESTIC_REPOSITORY, RESTIC_PASSWORD_FILE (or RESTIC_PASSWORD), and AWS credentials are set in env
-# BACKUP_PATHS should be a bash array in the env file
-
 if [ ${#BACKUP_PATHS[@]} -eq 0 ]; then
     log "Error: BACKUP_PATHS not configured (empty array)."
     exit 1
 fi
 
-# shellcheck disable=SC2068
-restic backup "${BACKUP_PATHS[@]}" >> "$LOG_FILE" 2>&1
-EXIT_CODE=$?
-
-if [ $EXIT_CODE -eq 0 ]; then
-    log "Backup finished successfully."
+# Function to perform backup for a specific repository
+perform_backup() {
+    local REPO_URL="$1"
+    local REPO_NAME="$2"
     
-    # Prune old snapshots (retention policy can be configured via env vars)
-    # Default: keep last 7 daily, 4 weekly, 12 monthly
-    KEEP_DAILY=${RETENTION_DAILY:-7}
-    KEEP_WEEKLY=${RETENTION_WEEKLY:-4}
-    KEEP_MONTHLY=${RETENTION_MONTHLY:-12}
-
-    log "Pruning old snapshots..."
-    restic forget --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --prune >> "$LOG_FILE" 2>&1
+    # Export the repository variable for restic to use
+    export RESTIC_REPOSITORY="$REPO_URL"
     
-else
-    log "Backup failed with exit code $EXIT_CODE."
+    log "--- Starting backup for: $REPO_NAME ($REPO_URL) ---"
+    
+    # shellcheck disable=SC2068
+    restic backup "${BACKUP_PATHS[@]}" >> "$LOG_FILE" 2>&1
+    local EXIT_CODE=$?
+
+    if [ $EXIT_CODE -eq 0 ]; then
+        log "Backup to $REPO_NAME finished successfully."
+        
+        # Prune old snapshots
+        KEEP_DAILY=${RETENTION_DAILY:-7}
+        KEEP_WEEKLY=${RETENTION_WEEKLY:-4}
+        KEEP_MONTHLY=${RETENTION_MONTHLY:-12}
+
+        log "Pruning old snapshots for $REPO_NAME..."
+        restic forget --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --prune >> "$LOG_FILE" 2>&1
+    else
+        log "Backup to $REPO_NAME failed with exit code $EXIT_CODE."
+        # We don't exit here to allow other backups to proceed
+    fi
+}
+
+# Counter for repositories processed
+REPO_COUNT=0
+
+# Check and run for Local Repository
+if [ -n "$RESTIC_REPOSITORY_LOCAL" ]; then
+    perform_backup "$RESTIC_REPOSITORY_LOCAL" "Local Repository"
+    ((REPO_COUNT++))
 fi
 
-exit $EXIT_CODE
+# Check and run for Remote Repository
+if [ -n "$RESTIC_REPOSITORY_REMOTE" ]; then
+    perform_backup "$RESTIC_REPOSITORY_REMOTE" "Remote Repository"
+    ((REPO_COUNT++))
+fi
+
+# Check Legacy Repository (if no others were run, or if explicitly set and not clashing)
+# If local/remote are unset, but RESTIC_REPOSITORY is set, use it.
+if [ $REPO_COUNT -eq 0 ] && [ -n "$RESTIC_REPOSITORY" ]; then
+    perform_backup "$RESTIC_REPOSITORY" "Default Repository"
+    ((REPO_COUNT++))
+fi
+
+if [ $REPO_COUNT -eq 0 ]; then
+    log "Error: No repositories configured (RESTIC_REPOSITORY_LOCAL, RESTIC_REPOSITORY_REMOTE, or RESTIC_REPOSITORY)."
+    exit 1
+fi
+
+log "All backup jobs finished."
+exit 0
