@@ -18,10 +18,18 @@ if [ ! -f "$TEMPLATE_FILE" ]; then
     exit 1
 fi
 
+# Ensure LaunchAgents directory exists
+mkdir -p "$(dirname "$DEST_PLIST")"
+
 # Create the plist file from template
 sed -e "s|{{SCRIPT_PATH}}|$BACKUP_SCRIPT|g" \
     -e "s|{{LOG_PATH}}|$LOG_FILE|g" \
     "$TEMPLATE_FILE" > "$DEST_PLIST"
+
+if [ ! -f "$DEST_PLIST" ]; then
+    echo "Error: Failed to create plist file at $DEST_PLIST"
+    exit 1
+fi
 
 echo "Created plist at $DEST_PLIST"
 

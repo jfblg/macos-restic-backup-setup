@@ -24,7 +24,10 @@ if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
 else
     echo "Creating bucket '$BUCKET_NAME'..."
     # Note: Location constraint might be needed depending on region, default is us-east-1
-    aws s3 mb "s3://$BUCKET_NAME"
+    if ! aws s3 mb "s3://$BUCKET_NAME"; then
+        echo "Error: Failed to create bucket '$BUCKET_NAME'. Ensure the name is unique and you have permissions."
+        exit 1
+    fi
 fi
 
 # Configure Intelligent-Tiering via Lifecycle Rule
@@ -58,7 +61,7 @@ aws iam create-user --user-name "$IAM_USER_NAME"
 
 # Create Policy
 POLICY_NAME="${IAM_USER_NAME}-policy"
-echo "Creating Policy '$POLICY_NAME' நானு..."
+echo "Creating Policy '$POLICY_NAME' ..."
 
 cat > /tmp/restic_policy.json <<EOF
 {
@@ -90,9 +93,16 @@ rm /tmp/restic_policy.json
 
 # Create Access Keys
 echo "Creating Access Keys..."
-CREDENTIALS_JSON=$(aws iam create-access-key --user-name "$IAM_USER_NAME")
-ACCESS_KEY=$(echo "$CREDENTIALS_JSON" | grep -o '"AccessKeyId": "[^"']*' | grep -o '[^"']*')
-SECRET_KEY=$(echo "$CREDENTIALS_JSON" | grep -o '"SecretAccessKey": "[^"']*' | grep -o '[^"']*')
+# Request keys and output as tab-separated text: AccessKeyId \t SecretAccessKey
+KEY_INFO=$(aws iam create-access-key --user-name "$IAM_USER_NAME" --query 'AccessKey.[AccessKeyId,SecretAccessKey]' --output text)
+
+if [ $? -ne 0 ]; then
+    echo "Error creating access keys."
+    exit 1
+fi
+
+ACCESS_KEY=$(echo "$KEY_INFO" | awk '{print $1}')
+SECRET_KEY=$(echo "$KEY_INFO" | awk '{print $2}')
 
 echo ""
 echo "----------------------------------------------------------------"
