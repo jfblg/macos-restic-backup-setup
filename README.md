@@ -114,6 +114,6 @@ restic restore latest --target /tmp/restore
 - `config/`: Configuration templates.
 - `templates/`: Launchd plist templates.
 
-## Security Note
+## License
 
-Your backup password and AWS credentials are stored in `~/.restic-backup/restic.env`. Ensure this file is readable only by your user (the scripts create it effectively, but `chmod 600 ~/.restic-backup/restic.env` is recommended).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
