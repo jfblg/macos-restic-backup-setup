@@ -4,6 +4,7 @@ This project provides a comprehensive set of scripts to configure, schedule, and
 
 ## Features
 
+- **3-2-1 Strategy Support**: Easily implement a [3-2-1 backup strategy](https://en.wikipedia.org/wiki/Backup#3-2-1_strategy) with sequential local and remote backups.
 - **Automated Setup**: Helper scripts to install Restic and configure AWS S3 (IAM User, Policy, Bucket).
 - **Scheduling**: Daily background backups using macOS `launchd` (runs automatically even if the computer was asleep).
 - **Secure**: Credentials are stored in a separate, user-owned configuration file.
@@ -52,6 +53,9 @@ This project provides a comprehensive set of scripts to configure, schedule, and
 
     *   **Option B: Local/Mounted Path**
         Edit `~/.restic-backup/restic.env` and set `RESTIC_REPOSITORY_LOCAL` (e.g., `/Volumes/BackupDrive/restic-repo`).
+
+    *   **3-2-1 Backup Strategy (Recommended)**
+        You can configure **both** `RESTIC_REPOSITORY_LOCAL` and `RESTIC_REPOSITORY_REMOTE` in `restic.env`. The backup script will automatically back up to both locations sequentially. See the [3-2-1 strategy](https://en.wikipedia.org/wiki/Backup#3-2-1_strategy) for more details.
 
 5.  **Finalize Configuration:**
     Edit `~/.restic-backup/restic.env` and set your password and `BACKUP_PATHS`.
