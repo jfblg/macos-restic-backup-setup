@@ -82,32 +82,45 @@ This project provides a comprehensive set of scripts to configure, schedule, and
 
 ## Usage
 
+If you ran the optional `./scripts/install_cli.sh` script, you can use the commands below from any directory. Otherwise, run the scripts directly from the `scripts/` folder.
+
 ### Check Logs
-Logs are written to `~/.restic-backup/backup.log`. You can view them using the CLI tool:
+View the backup history and status:
 ```bash
-# Show last 50 lines
+# Using CLI tools:
 restic-log
 
-# Follow the log in real-time
-restic-log -f
+# Running script directly:
+./scripts/log.sh
 ```
+*Note: Run `restic-log -f` to follow logs in real-time.*
 
 ### Manual Backup
-You can trigger a backup manually at any time:
+Trigger a backup job immediately:
 ```bash
+# Using CLI tools:
+restic-backup
+
+# Running script directly:
 ./scripts/backup.sh
 ```
 
 ### Restore Files
-Use the interactive restore script, which will ask you which repository to use if multiple are configured:
+Restore files from a specific snapshot:
 ```bash
+# Using CLI tools:
+restic-restore
+
+# Running script directly:
 ./scripts/restore.sh
 ```
-Or use standard restic commands (remember to source the config and export the correct repository):
+The script will prompt you to select the repository (if multiple are configured) and the snapshot ID.
+
+For manual restoration using standard restic commands:
 ```bash
 source ~/.restic-backup/restic.env
-export RESTIC_REPOSITORY=$RESTIC_REPOSITORY_REMOTE # or _LOCAL
-restic restore latest --target /tmp/restore
+export RESTIC_REPOSITORY=$RESTIC_REPOSITORY_REMOTE # or RESTIC_REPOSITORY_LOCAL
+restic restore latest --target /path/to/restore
 ```
 
 ## Directory Structure
