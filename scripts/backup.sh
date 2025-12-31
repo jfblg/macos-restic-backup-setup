@@ -7,24 +7,27 @@ LOG_FILE="${HOME}/.restic-backup/backup.log"
 # Ensure log directory exists
 mkdir -p "$(dirname "$LOG_FILE")"
 
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+}
+
 # Load configuration
 if [ -f "$CONFIG_FILE" ]; then
     # shellcheck disable=SC1090
     source "$CONFIG_FILE"
 else
-    echo "Error: Configuration file not found at $CONFIG_FILE"
+    log "Error: Configuration file not found at $CONFIG_FILE"
     exit 1
 fi
+
+# Add common paths for macOS (Homebrew)
+export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin"
 
 # Check if restic is installed
 if ! command -v restic &> /dev/null; then
-    echo "Error: restic is not installed." >> "$LOG_FILE"
+    log "Error: restic is not installed."
     exit 1
 fi
-
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
-}
 
 log "Starting backup..."
 
